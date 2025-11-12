@@ -1,0 +1,139 @@
+﻿@* Views/Form/Preview.cshtml *@
+@model DynamicFormBuilderQIA.Models.Form
+
+@{
+    ViewData["Title"] = "Preview - " + Model.FormTitle;
+    var fieldOptions = ViewBag.FieldOptions as List<DynamicFormBuilderQIA.Models.FieldOption>;
+}
+
+@section Styles {
+    <style>
+        .preview-container {
+            max-width: 900px;
+            margin: 30px auto;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .required-asterisk {
+            color: #dc3545;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+        .form-control {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+        }
+        .form-control:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        .form-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+}
+
+<div class="preview-container">
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-tags"></i> Dynamic Form Builder
+        </div>
+        <div class="card-body">
+            <div class="form-info">
+                <strong>Form Title:</strong> @Model.FormTitle<br>
+                <small class="text-muted">Created: @Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</small>
+            </div>
+
+            <form id="previewForm">
+                @for (int i = 0; i < Model.FormFields.Count; i++)
+                {
+                    var field = Model.FormFields[i];
+                    
+                    <div class="form-group">
+                        <label for="field_@field.FieldId">
+                            @field.FieldLabel
+                            @if (field.IsRequired)
+                            {
+                                <span class="required-asterisk">*</span>
+                            }
+                        </label>
+                        @* <select class="form-control" 
+                                id="field_@field.FieldId" 
+                                name="field_@field.FieldId"
+                                @(field.IsRequired ? "required" : "")>
+                            <option value="">Select Item</option>
+                            @if (fieldOptions != null)
+                            {
+                                foreach (var option in fieldOptions)
+                                {
+                                    <option value="@option.OptionValue" 
+                                            @(field.SelectedOption == option.OptionValue ? "selected" : "")>
+                                        @option.OptionText
+                                    </option>
+                                }
+                            }
+                        </select> *@
+                        <select class="form-control"
+                                id="field_@field.FieldId"
+                                name="field_@field.FieldId"
+                                @(field.IsRequired ? "required" : "")>
+                            <option value="">Select Item</option>
+                            @if (fieldOptions != null)
+                            {
+                                foreach (var option in fieldOptions)
+                                {
+                                    var selected = field.SelectedOption == option.OptionValue ? "selected" : "";
+                                    @Html.Raw($"<option value=\"{option.OptionValue}\" {selected}>{option.OptionText}</option>")
+                                }
+                            }
+                        </select>
+
+
+                    </div>
+                }
+
+                <div class="mt-4">
+                    <a href="@Url.Action("Index", "Form")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Optional: Add any preview-specific JavaScript here
+            console.log('Preview form loaded for: @Model.FormTitle');
+        });
+    </script>
+}

@@ -1,0 +1,242 @@
+﻿@* Views/Form/Create.cshtml *@
+@model DynamicFormBuilderQIA.ViewModels.CreateFormViewModel
+
+@{
+    ViewData["Title"] = "Dynamic Form Builder";
+}
+
+@section Styles {
+    <style>
+        .form-builder-container {
+            max-width: 900px;
+            margin: 30px auto;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .field-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            position: relative;
+        }
+        .remove-field {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .btn-primary {
+            background-color: #5bc0de;
+            border-color: #5bc0de;
+        }
+        .btn-success {
+            background-color: #5cb85c;
+            border-color: #5cb85c;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        .error {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        label.error {
+            display: block;
+        }
+    </style>
+}
+
+<div class="form-builder-container">
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-tags"></i> Dynamic Form Builder
+        </div>
+        <div class="card-body">
+            <form id="formBuilderForm" asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="form-group">
+                    <label for="formTitle">Form Title</label>
+                    <input type="text"
+                           class="form-control"
+                           id="formTitle"
+                           name="FormTitle"
+                           placeholder="Form Title..."
+                           required>
+                </div>
+
+                <div id="fieldsContainer">
+                    <!-- Dynamic fields will be added here -->
+                </div>
+
+                <div class="mt-3">
+                    <button type="button" class="btn btn-primary" id="addMoreBtn">
+                        Add More
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="clearBtn">
+                        Clear
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    
+    <script>
+        let fieldCounter = 0;
+        let fieldOptions = @Html.Raw(Json.Serialize(ViewBag.FieldOptions));
+
+        $(document).ready(function() {
+            // Add initial two fields (Level 1 and Level 2)
+            addField(1);
+            addField(2);
+
+            // Setup form validation
+            $("#formBuilderForm").validate({
+                rules: {
+                    FormTitle: {
+                        required: true,
+                        minlength: 3
+                    }
+                },
+                messages: {
+                    FormTitle: {
+                        required: "Please enter a form title",
+                        minlength: "Form title must be at least 3 characters"
+                    }
+                },
+                errorElement: 'span',
+                errorClass: 'error',
+                highlight: function(element) {
+                    $(element).addClass('is-invalid');
+                },
+                unhighlight: function(element) {
+                    $(element).removeClass('is-invalid');
+                }
+            });
+
+            // Add More button click
+            $("#addMoreBtn").click(function() {
+                let nextLevel = $('.field-item').length + 1;
+                addField(nextLevel);
+            });
+
+            // Clear button click
+            $("#clearBtn").click(function() {
+                if (confirm('Are you sure you want to clear all fields?')) {
+                    $("#formTitle").val('');
+                    $("#fieldsContainer").empty();
+                    fieldCounter = 0;
+                    addField(1);
+                    addField(2);
+                }
+            });
+
+            // Remove field handler (using event delegation)
+            $(document).on('click', '.remove-field', function() {
+                if ($('.field-item').length > 1) {
+                    $(this).closest('.field-item').remove();
+                    updateFieldLevels();
+                } else {
+                    alert('At least one field is required');
+                }
+            });
+        });
+
+                function addField(level) {
+            fieldCounter++;
+
+            let optionsHtml = '<option value="">Select Item</option>';
+            fieldOptions.forEach(function(option) {
+                optionsHtml += `<option value="${option.optionValue}">${option.optionText}</option>`;
+            });
+
+            let fieldHtml = `
+                <div class="field-item" data-field-id="${fieldCounter}">
+                    <span class="remove-field" title="Remove Field">&times;</span>
+
+                    <div class="form-group">
+                        <label>Level ${level}</label>
+                        <select class="form-control field-select"
+                                name="Fields[${fieldCounter-1}].SelectedOption"
+                                required>
+                            ${optionsHtml}
+                        </select>
+                        <input type="hidden" name="Fields[${fieldCounter-1}].FieldLabel" value="Level ${level}">
+                        <input type="hidden" name="Fields[${fieldCounter-1}].FieldLevel" value="${level}">
+                        <input type="hidden" name="Fields[${fieldCounter-1}].DisplayOrder" value="${fieldCounter}">
+                        <input type="hidden" name="Fields[${fieldCounter-1}].IsRequired" value="false" class="field-required-input">
+                    </div>
+
+                    <div class="form-check">
+                        <input type="checkbox"
+                               class="form-check-input field-required-checkbox"
+                               id="required_${fieldCounter}">
+                        <label class="form-check-label" for="required_${fieldCounter}">
+                            Required Field
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            $("#fieldsContainer").append(fieldHtml);
+
+            // ✅ Safely re-attach validation to the new field
+            let validator = $("#formBuilderForm").data("validator");
+            if (validator) {
+                $(`select[name="Fields[${fieldCounter-1}].SelectedOption"]`).each(function() {
+                    validator.settings.ignore = "";
+                    validator.addElements($(this)); // register new field with validator
+                    $(this).rules("add", {
+                        required: true,
+                        messages: { required: "Please select an option" }
+                    });
+                });
+            }
+
+            // Handle required checkbox change
+            $(`#required_${fieldCounter}`).on('change', function() {
+                let $fieldItem = $(this).closest('.field-item');
+                let $hiddenInput = $fieldItem.find('.field-required-input');
+                $hiddenInput.val($(this).is(':checked'));
+            });
+        }
+
+
+        function updateFieldLevels() {
+            $('.field-item').each(function(index) {
+                let level = index + 1;
+                $(this).find('label').first().text('Level ' + level);
+                $(this).find('input[name$=".FieldLabel"]').val('Level ' + level);
+                $(this).find('input[name$=".FieldLevel"]').val(level);
+                $(this).find('input[name$=".DisplayOrder"]').val(index + 1);
+            });
+        }
+    </script>
+}
