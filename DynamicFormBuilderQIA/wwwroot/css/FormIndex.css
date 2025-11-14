@@ -50,4 +50,29 @@
 .toast-container {
     z-index: 1055 !important;
 }
+.modal-dialog {
+    max-width: 900px;
+}
+
+.required-asterisk {
+    color: #dc3545;
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+.form-info {
+    background: #e9ecef;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.action-col {
+    max-width: 200px !important;
+    white-space: normal !important;
+}
 

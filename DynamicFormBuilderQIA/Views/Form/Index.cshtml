@@ -66,6 +66,30 @@
         </div>
     </div>
 </div>
+<!-- Modal Preview -->
+<div class="modal fade" id="formPreviewModal" tabindex="-1" aria-labelledby="formPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="formPreviewModalLabel">
+                    <i class="fas fa-tags"></i> Dynamic Form Builder
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalFormContent">
+                <div class="text-center py-5">
+                    <i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>
+                    <p class="mt-3">Loading form preview...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                     Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script>
@@ -102,6 +126,12 @@
                         alert('Error loading forms data. Please try again.');
                     }
                 },
+                 columnDefs: [
+                    {
+                        targets: 3,                  
+                        className: "action-col"     
+                    }
+                ],
                 columns: [
                     { data: 'formTitle', name: 'FormTitle' },
                     { data: 'createdDate', name: 'CreatedDate' },
@@ -126,6 +156,12 @@
                     searchPlaceholder: 'Search by Form Title'
                 }
             });
+             // Handle modal preview click
+            $(document).on('click', '.btn-modal-preview', function(e) {
+                e.preventDefault();
+                var formId = $(this).data('form-id');
+                loadFormPreview(formId);
+            });
         });
 
         function showToast(toastId) {
@@ -137,6 +173,37 @@
                 });
                 toast.show();
             }
+        }
+        function loadFormPreview(formId) {
+            // Show modal
+            var modal = new bootstrap.Modal(document.getElementById('formPreviewModal'));
+            modal.show();
+
+            // Show loading state
+            $('#modalFormContent').html(`
+                <div class="text-center py-5">
+                    <i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>
+                    <p class="mt-3">Loading form preview...</p>
+                </div>
+            `);
+
+            // Load form content via AJAX
+            $.ajax({
+                url: '/api/FormApi/GetFormPreview/' + formId,
+                type: 'GET',
+                success: function(response) {
+                    $('#modalFormContent').html(response);
+                },
+                error: function(xhr, status, error) {
+                    $('#modalFormContent').html(`
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Error!</strong> Failed to load form preview. Please try again.
+                        </div>
+                    `);
+                    console.error('Error loading form preview:', error);
+                }
+            });
         }
     </script>
 }

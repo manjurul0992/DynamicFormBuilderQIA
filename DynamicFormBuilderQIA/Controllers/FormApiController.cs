@@ -58,13 +58,41 @@ public class FormApiController : ControllerBase
         }
     }
 
+    //[HttpPost("GetFormsDataTable")]
+    //public async Task<IActionResult> GetFormsDataTable([FromBody] DataTableRequest request)
+    //{
+    //    try
+    //    {
+    //        var (data, totalRecords, filteredRecords) = await _formRepository.GetAllFormsAsync(request);
+
+    //        var response = new
+    //        {
+    //            draw = request.Draw,
+    //            recordsTotal = totalRecords,
+    //            recordsFiltered = filteredRecords,
+    //            data = data.Select(f => new
+    //            {
+    //                formId = f.FormId,
+    //                formTitle = f.FormTitle,
+    //                createdDate = f.CreatedDate.ToString("yyyy-MM-dd HH:mm"),
+    //                fieldCount = f.FieldCount,
+    //                actions = $"<a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'>Preview</a> <a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'> Modal Preview</a>"
+    //            }).ToList()
+    //        };
+
+    //        return Ok(response);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return StatusCode(500, new { message = "Error retrieving forms", error = ex.Message });
+    //    }
+    //}
     [HttpPost("GetFormsDataTable")]
     public async Task<IActionResult> GetFormsDataTable([FromBody] DataTableRequest request)
     {
         try
         {
             var (data, totalRecords, filteredRecords) = await _formRepository.GetAllFormsAsync(request);
-
             var response = new
             {
                 draw = request.Draw,
@@ -76,10 +104,15 @@ public class FormApiController : ControllerBase
                     formTitle = f.FormTitle,
                     createdDate = f.CreatedDate.ToString("yyyy-MM-dd HH:mm"),
                     fieldCount = f.FieldCount,
-                    actions = $"<a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'>Preview</a> <a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'> Modal Preview</a>"
+                    actions = $@"
+                    <a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'>
+                        <i class='fas fa-eye'></i> Preview
+                    </a>
+                    <button type='button' class='btn btn-sm btn-info btn-modal-preview' data-form-id='{f.FormId}'>
+                        <i class='fas fa-window-restore'></i> Modal Preview
+                    </button>"
                 }).ToList()
             };
-
             return Ok(response);
         }
         catch (Exception ex)
@@ -87,6 +120,63 @@ public class FormApiController : ControllerBase
             return StatusCode(500, new { message = "Error retrieving forms", error = ex.Message });
         }
     }
+
+    [HttpGet("GetFormPreview/{formId}")]
+    public async Task<IActionResult> GetFormPreview(int formId)
+    {
+        try
+        {
+            // Fetch the form with its fields
+            var form = await _formRepository.GetFormByIdAsync(formId);
+
+            if (form == null)
+            {
+                return NotFound(new { message = "Form not found" });
+            }
+
+            // Fetch field options (adjust based on your implementation)
+            var fieldOptions = await _formRepository.GetAllFieldOptionsAsync();
+
+            // Build HTML content
+            var htmlContent = $@"
+            <div class='form-info'>
+                <strong>Form Title:</strong> {form.FormTitle}<br>
+                <small class='text-muted'>Created: {form.CreatedDate:yyyy-MM-dd HH:mm}</small>
+            </div>
+            <form id='modalPreviewForm'>";
+
+            foreach (var field in form.FormFields)
+            {
+                htmlContent += $@"
+                <div class='mb-3'>
+                    <label for='field_{field.FieldId}' class='form-label'>
+                        {field.FieldLabel}
+                        {(field.IsRequired ? "<span class='required-asterisk'>*</span>" : "")}
+                    </label>
+                    <select class='form-select' id='field_{field.FieldId}' name='field_{field.FieldId}' {(field.IsRequired ? "required" : "")}>
+                        <option value=''>-- Select --</option>";
+
+                foreach (var option in fieldOptions)
+                {
+                    var selected = option.OptionId.ToString() == field.SelectedOption ? "selected" : "";
+                    htmlContent += $"<option value='{option.OptionId}' {selected}>{option.OptionValue}</option>";
+                }
+
+                htmlContent += @"
+                    </select>
+                </div>";
+            }
+
+            htmlContent += "</form>";
+
+            return Content(htmlContent, "text/html");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error loading form preview", error = ex.Message });
+        }
+    }
+
 
     [HttpGet("GetFormById/{id}")]
     public async Task<IActionResult> GetFormById(int id)
