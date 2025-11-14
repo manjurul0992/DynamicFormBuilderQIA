@@ -85,11 +85,11 @@ BEGIN
             DisplayOrder
         FROM OPENJSON(@FormFieldsJson)
         WITH (
-            FieldLabel NVARCHAR(200) '$.FieldLabel',  -- Changed from fieldLabel
-            FieldLevel INT '$.FieldLevel',             -- Changed from fieldLevel
-            IsRequired BIT '$.IsRequired',             -- Changed from isRequired
-            SelectedOption NVARCHAR(100) '$.SelectedOption', -- Changed from selectedOption
-            DisplayOrder INT '$.DisplayOrder'          -- Changed from displayOrder
+            FieldLabel NVARCHAR(200) '$.FieldLabel',
+            FieldLevel INT '$.FieldLevel',
+            IsRequired BIT '$.IsRequired', 
+            SelectedOption NVARCHAR(100) '$.SelectedOption', 
+            DisplayOrder INT '$.DisplayOrder' 
         );
         
         COMMIT TRANSACTION;

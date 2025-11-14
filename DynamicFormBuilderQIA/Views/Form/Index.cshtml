@@ -5,56 +5,10 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
     <style>
         .history-container {
             max-width: 1200px;
             margin: 30px auto;
-        }
-
-        .card {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .card-header {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #ddd;
-            padding: 15px 20px;
-            font-weight: 600;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        .alert {
-            margin-bottom: 20px;
-        }
-
-        .table thead th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            border-bottom: 2px solid #dee2e6;
-        }
-
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-            color: white;
-        }
-
-            .btn-primary:hover {
-                background-color: #0056b3;
-                border-color: #0056b3;
-            }
-
-        .toast-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1050;
         }
 
         /* Custom Toast Styles */
@@ -103,7 +57,7 @@
 }
 
 <!-- Toast Container -->
-<div class="toast-container">
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
     @if (TempData["SuccessMessage"] != null)
     {
         <div id="successToast" class="toast toast-success align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -130,19 +84,22 @@
 </div>
 
 <div class="history-container">
-    <div class="card">
-        <div class="card-header">
-            <i class="fas fa-history"></i> History
-        </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <a href="@Url.Action("Create", "Form")" class="btn btn-success">
-                    <i class="fas fa-plus"></i> Create New Form
-                </a>
+    <div class="card shadow-sm">
+        <div class="card-header bg-light border-bottom fw-semibold d-flex justify-content-between align-items-center">
+            <div class="fw-bold">
+                <i class="fas fa-history"></i> History
             </div>
 
+            <a href="@Url.Action("Create", "Form")" class="btn btn-success">
+                <i class="fas fa-plus"></i> Create New Form
+            </a>
+        </div>
+
+        <div class="card-body">
+            
+
             <table id="formsTable" class="table table-striped table-bordered" style="width:100%">
-                <thead>
+                <thead class="table-light">
                     <tr>
                         <th>Form Title</th>
                         <th>Created Date</th>
@@ -159,24 +116,21 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
-
     <script>
         $(document).ready(function() {
             // Show toasts if they exist
             @if (TempData["SuccessMessage"] != null)
             {
-                    <text>
-                    showToast('successToast');
-                    </text>
+                        <text>
+                        showToast('successToast');
+                        </text>
             }
 
             @if (TempData["ErrorMessage"] != null)
             {
-                    <text>
-                    showToast('errorToast');
-                    </text>
+                        <text>
+                        showToast('errorToast');
+                        </text>
             }
 
             var table = $('#formsTable').DataTable({
@@ -217,8 +171,7 @@
                     processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span>',
                     emptyTable: 'No forms available',
                     zeroRecords: 'No matching forms found',
-                    // search: '_INPUT_',
-                searchPlaceholder: 'Search by Form Title'
+                    searchPlaceholder: 'Search by Form Title'
                 }
             });
         });

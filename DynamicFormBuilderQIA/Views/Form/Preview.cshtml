@@ -1,64 +1,19 @@
 ﻿@model DynamicFormBuilderQIA.Models.Form
-
 @{
     ViewData["Title"] = "Preview - " + Model.FormTitle;
     var fieldOptions = ViewBag.FieldOptions as List<DynamicFormBuilderQIA.Models.FieldOption>;
 }
-
 @section Styles {
     <style>
-        /* Your existing styles */
         .preview-container {
             max-width: 900px;
             margin: 30px auto;
         }
 
-        .card {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .card-header {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #ddd;
-            padding: 15px 20px;
-            font-weight: 600;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-            .form-group label {
-                font-weight: 500;
-                margin-bottom: 0.5rem;
-            }
-
         .required-asterisk {
             color: #dc3545;
             font-weight: bold;
             margin-left: 4px;
-        }
-
-        .form-control, .form-select {
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            padding: 0.5rem 0.75rem;
-        }
-
-            .form-control:focus, .form-select:focus {
-                border-color: #80bdff;
-                box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-            }
-
-        .btn-secondary {
-            background-color: #6c757d;
-            border-color: #6c757d;
         }
 
         .form-info {
@@ -67,18 +22,12 @@
             border-radius: 4px;
             margin-bottom: 20px;
         }
-
-        select.form-select {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
     </style>
 }
 
 <div class="preview-container">
-    <div class="card">
-        <div class="card-header">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light border-bottom fw-bold">
             <i class="fas fa-tags"></i> Dynamic Form Builder
         </div>
         <div class="card-body">
@@ -86,7 +35,6 @@
                 <strong>Form Title:</strong> @Model.FormTitle<br>
                 <small class="text-muted">Created: @Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</small>
             </div>
-
             <form id="previewForm">
                 @foreach (var field in Model.FormFields)
                 {
@@ -98,9 +46,8 @@
                                 isRequired = field.IsRequired,
                                 options = fieldOptions,
                                 selectedValue = field.SelectedOption
-                    })
-                }
-
+                                })
+                                }
                 <div class="mt-4">
                     <a href="@Url.Action("Index", "Form")" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to List
@@ -110,4 +57,3 @@
         </div>
     </div>
 </div>
-}

@@ -1,14 +1,14 @@
 ﻿@model DropdownViewModel
 
 <div class="form-group">
-    <label for="@Model.FieldId">
+    <label for="@Model.FieldId" class="fw-bold mb-1">
         @Model.FieldLabel
         @if (Model.IsRequired)
         {
             <span class="required-asterisk">*</span>
         }
     </label>
-    <select class="form-select field-select"
+    <select class="form-select field-select mb-1"
             id="@Model.FieldId"
             name="@Model.FieldName"
             asp-items="@(new SelectList(Model.Options, "OptionValue", "OptionText", Model.SelectedValue))"
