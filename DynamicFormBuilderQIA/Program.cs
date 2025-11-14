@@ -1,5 +1,7 @@
 using DynamicFormBuilderQIA.Repository.Implements;
 using DynamicFormBuilderQIA.Repository.interfaces;
+using DynamicFormBuilderQIA.Services.Abstraction;
+using DynamicFormBuilderQIA.Services.Concrete;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,8 @@ builder.Services.AddControllers();
 
 // Register repositories
 builder.Services.AddScoped<IFormRepository, FormRepository>();
+// Register services
+builder.Services.AddScoped<IFormService, FormService>();
 
 // Add session support (optional)
 builder.Services.AddSession(options =>

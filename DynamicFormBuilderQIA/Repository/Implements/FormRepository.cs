@@ -21,18 +21,22 @@ public class FormRepository : IFormRepository
     {
         var options = new List<FieldOption>();
 
-        await GenerateQueryExtension.ExecuteReaderAsync(_connectionString, "sp_GetAllFieldOptions", null, async reader =>
-        {
-            while (await reader.ReadAsync())
+        await GenerateQueryExtension.ExecuteReaderAsync(
+            _connectionString,
+            "sp_GetAllFieldOptions",
+            null,
+            async reader =>
             {
-                options.Add(new FieldOption
+                while (await reader.ReadAsync())
                 {
-                    OptionId = reader.GetInt32("OptionId"),
-                    OptionText = reader.GetString("OptionText"),
-                    OptionValue = reader.GetString("OptionValue")
-                });
-            }
-        });
+                    options.Add(new FieldOption
+                    {
+                        OptionId = reader.GetInt32("OptionId"),
+                        OptionText = reader.GetString("OptionText"),
+                        OptionValue = reader.GetString("OptionValue")
+                    });
+                }
+            });
 
         return options;
     }
@@ -48,12 +52,15 @@ public class FormRepository : IFormRepository
 
         var parameters = new[]
         {
-                GenerateQueryExtension.CreateParameter("@FormTitle", model.FormTitle),
-                GenerateQueryExtension.CreateParameter("@FormFieldsJson", fieldsJson),
-                GenerateQueryExtension.CreateOutputParameter("@FormId", SqlDbType.Int)
-            };
+            GenerateQueryExtension.CreateParameter("@FormTitle", model.FormTitle),
+            GenerateQueryExtension.CreateParameter("@FormFieldsJson", fieldsJson),
+            GenerateQueryExtension.CreateOutputParameter("@FormId", SqlDbType.Int)
+        };
 
-        await GenerateQueryExtension.ExecuteNonQueryAsync(_connectionString, "sp_SaveForm", parameters);
+        await GenerateQueryExtension.ExecuteNonQueryAsync(
+            _connectionString,
+            "sp_SaveForm",
+            parameters);
 
         formId = (int)parameters[2].Value;
 
@@ -84,29 +91,33 @@ public class FormRepository : IFormRepository
 
         var parameters = new[]
         {
-                GenerateQueryExtension.CreateParameter("@PageNumber", pageNumber),
-                GenerateQueryExtension.CreateParameter("@PageSize", pageSize),
-                GenerateQueryExtension.CreateParameter("@SearchValue", searchValue),
-                GenerateQueryExtension.CreateParameter("@SortColumn", sortColumn),
-                GenerateQueryExtension.CreateParameter("@SortDirection", sortDirection),
-                GenerateQueryExtension.CreateOutputParameter("@TotalRecords", SqlDbType.Int),
-                GenerateQueryExtension.CreateOutputParameter("@FilteredRecords", SqlDbType.Int)
-            };
+            GenerateQueryExtension.CreateParameter("@PageNumber", pageNumber),
+            GenerateQueryExtension.CreateParameter("@PageSize", pageSize),
+            GenerateQueryExtension.CreateParameter("@SearchValue", searchValue),
+            GenerateQueryExtension.CreateParameter("@SortColumn", sortColumn),
+            GenerateQueryExtension.CreateParameter("@SortDirection", sortDirection),
+            GenerateQueryExtension.CreateOutputParameter("@TotalRecords", SqlDbType.Int),
+            GenerateQueryExtension.CreateOutputParameter("@FilteredRecords", SqlDbType.Int)
+        };
 
-        await GenerateQueryExtension.ExecuteReaderAsync(_connectionString, "sp_GetAllForms", parameters, async reader =>
-        {
-            while (await reader.ReadAsync())
+        await GenerateQueryExtension.ExecuteReaderAsync(
+            _connectionString,
+            "sp_GetAllForms",
+            parameters,
+            async reader =>
             {
-                forms.Add(new FormListItemViewModel
+                while (await reader.ReadAsync())
                 {
-                    FormId = reader.GetInt32("FormId"),
-                    FormTitle = reader.GetString("FormTitle"),
-                    CreatedDate = reader.GetDateTime("CreatedDate"),
-                    ModifiedDate = reader.GetDateTime("ModifiedDate"),
-                    FieldCount = reader.GetInt32("FieldCount")
-                });
-            }
-        });
+                    forms.Add(new FormListItemViewModel
+                    {
+                        FormId = reader.GetInt32("FormId"),
+                        FormTitle = reader.GetString("FormTitle"),
+                        CreatedDate = reader.GetDateTime("CreatedDate"),
+                        ModifiedDate = reader.GetDateTime("ModifiedDate"),
+                        FieldCount = reader.GetInt32("FieldCount")
+                    });
+                }
+            });
 
         totalRecords = (int)parameters[5].Value;
         filteredRecords = (int)parameters[6].Value;
@@ -120,40 +131,44 @@ public class FormRepository : IFormRepository
 
         var parameters = new[]
         {
-                GenerateQueryExtension.CreateParameter("@FormId", formId)
-            };
+            GenerateQueryExtension.CreateParameter("@FormId", formId)
+        };
 
-        await GenerateQueryExtension.ExecuteReaderAsync(_connectionString, "sp_GetFormById", parameters, async reader =>
-        {
-            if (await reader.ReadAsync())
+        await GenerateQueryExtension.ExecuteReaderAsync(
+            _connectionString,
+            "sp_GetFormById",
+            parameters,
+            async reader =>
             {
-                form = new Form
+                if (await reader.ReadAsync())
                 {
-                    FormId = reader.GetInt32("FormId"),
-                    FormTitle = reader.GetString("FormTitle"),
-                    CreatedDate = reader.GetDateTime("CreatedDate"),
-                    ModifiedDate = reader.GetDateTime("ModifiedDate"),
-                    FormFields = new List<FormField>()
-                };
-            }
-
-            if (await reader.NextResultAsync() && form != null)
-            {
-                while (await reader.ReadAsync())
-                {
-                    form.FormFields.Add(new FormField
+                    form = new Form
                     {
-                        FieldId = reader.GetInt32("FieldId"),
                         FormId = reader.GetInt32("FormId"),
-                        FieldLabel = reader.GetString("FieldLabel"),
-                        FieldLevel = reader.GetInt32("FieldLevel"),
-                        IsRequired = reader.GetBoolean("IsRequired"),
-                        SelectedOption = reader.IsDBNull("SelectedOption") ? null : reader.GetString("SelectedOption"),
-                        DisplayOrder = reader.GetInt32("DisplayOrder")
-                    });
+                        FormTitle = reader.GetString("FormTitle"),
+                        CreatedDate = reader.GetDateTime("CreatedDate"),
+                        ModifiedDate = reader.GetDateTime("ModifiedDate"),
+                        FormFields = new List<FormField>()
+                    };
                 }
-            }
-        });
+
+                if (await reader.NextResultAsync() && form != null)
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        form.FormFields.Add(new FormField
+                        {
+                            FieldId = reader.GetInt32("FieldId"),
+                            FormId = reader.GetInt32("FormId"),
+                            FieldLabel = reader.GetString("FieldLabel"),
+                            FieldLevel = reader.GetInt32("FieldLevel"),
+                            IsRequired = reader.GetBoolean("IsRequired"),
+                            SelectedOption = reader.IsDBNull("SelectedOption") ? null : reader.GetString("SelectedOption"),
+                            DisplayOrder = reader.GetInt32("DisplayOrder")
+                        });
+                    }
+                }
+            });
 
         return form;
     }
@@ -162,10 +177,13 @@ public class FormRepository : IFormRepository
     {
         var parameters = new[]
         {
-                GenerateQueryExtension.CreateParameter("@FormId", formId)
-            };
+            GenerateQueryExtension.CreateParameter("@FormId", formId)
+        };
 
-        await GenerateQueryExtension.ExecuteNonQueryAsync(_connectionString, "sp_DeleteForm", parameters);
+        await GenerateQueryExtension.ExecuteNonQueryAsync(
+            _connectionString,
+            "sp_DeleteForm",
+            parameters);
     }
 }
 

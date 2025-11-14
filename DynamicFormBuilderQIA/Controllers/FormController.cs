@@ -1,4 +1,5 @@
 ﻿using DynamicFormBuilderQIA.Repository.interfaces;
+using DynamicFormBuilderQIA.Services.Abstraction;
 using DynamicFormBuilderQIA.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,17 +7,23 @@ namespace DynamicFormBuilderQIA.Controllers;
 
 public class FormController : Controller
 {
-    private readonly IFormRepository _formRepository;
+    //private readonly IFormRepository _formRepository;
 
-    public FormController(IFormRepository formRepository)
+    //public FormController(IFormRepository formRepository)
+    //{
+    //    _formRepository = formRepository;
+    //}
+    private readonly IFormService _formService;
+
+    public FormController(IFormService formService)
     {
-        _formRepository = formRepository;
+        _formService = formService;
     }
 
-   public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create()
      // GET: Form/Create
     {
-        ViewBag.FieldOptions = await _formRepository.GetAllFieldOptionsAsync();
+        ViewBag.FieldOptions = await _formService.GetAllFieldOptionsAsync();
         return View();
     }
 
@@ -27,45 +34,54 @@ public class FormController : Controller
     {
         if (!ModelState.IsValid)
         {
-            ViewBag.FieldOptions = await _formRepository.GetAllFieldOptionsAsync();
+            ViewBag.FieldOptions = await _formService.GetAllFieldOptionsAsync();
             return View(model);
         }
 
         try
         {
-            var formId = await _formRepository.SaveFormAsync(model);
+            var formId = await _formService.CreateFormAsync(model);
             TempData["SuccessMessage"] = "Form created successfully!";
             return RedirectToAction(nameof(Index));
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            ViewBag.FieldOptions = await _formService.GetAllFieldOptionsAsync();
+            return View(model);
         }
         catch (Exception ex)
         {
             ModelState.AddModelError("", "Error saving form: " + ex.Message);
-            ViewBag.FieldOptions = await _formRepository.GetAllFieldOptionsAsync();
+            ViewBag.FieldOptions = await _formService.GetAllFieldOptionsAsync();
             return View(model);
         }
     }
 
     // GET: Form/Index (List all forms)
-    public IActionResult Index()
-    {
-        return View();
-    }
+    public IActionResult Index() => View();
+    //{
+    //    return View();
+    //}
 
     // GET: Form/Preview/5
     public async Task<IActionResult> Preview(int id)
     {
         try
         {
-            var form = await _formRepository.GetFormByIdAsync(id);
-
-            if (form == null)
-            {
-                TempData["ErrorMessage"] = "Form not found.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            ViewBag.FieldOptions = await _formRepository.GetAllFieldOptionsAsync();
+            var form = await _formService.GetFormByIdAsync(id);
+            ViewBag.FieldOptions = await _formService.GetAllFieldOptionsAsync();
             return View(form);
+        }
+        catch (KeyNotFoundException)
+        {
+            TempData["ErrorMessage"] = "Form not found.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (ArgumentException ex)
+        {
+            TempData["ErrorMessage"] = ex.Message;
+            return RedirectToAction(nameof(Index));
         }
         catch (Exception ex)
         {
@@ -81,8 +97,16 @@ public class FormController : Controller
     {
         try
         {
-            await _formRepository.DeleteFormAsync(id);
+            await _formService.DeleteFormAsync(id);
             TempData["SuccessMessage"] = "Form deleted successfully!";
+        }
+        catch (KeyNotFoundException)
+        {
+            TempData["ErrorMessage"] = "Form not found.";
+        }
+        catch (ArgumentException ex)
+        {
+            TempData["ErrorMessage"] = ex.Message;
         }
         catch (Exception ex)
         {

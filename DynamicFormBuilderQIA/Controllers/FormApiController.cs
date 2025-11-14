@@ -76,7 +76,7 @@ public class FormApiController : ControllerBase
                     formTitle = f.FormTitle,
                     createdDate = f.CreatedDate.ToString("yyyy-MM-dd HH:mm"),
                     fieldCount = f.FieldCount,
-                    actions = $"<a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'>Preview</a>"
+                    actions = $"<a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'>Preview</a> <a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'> Modal Preview</a>"
                 }).ToList()
             };
 
