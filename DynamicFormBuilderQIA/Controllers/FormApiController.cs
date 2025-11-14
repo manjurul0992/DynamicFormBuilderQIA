@@ -1,6 +1,5 @@
 ﻿using DynamicFormBuilderQIA.Repository.interfaces;
 using DynamicFormBuilderQIA.ViewModels;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DynamicFormBuilderQIA.Controllers;
@@ -66,19 +65,19 @@ public class FormApiController : ControllerBase
         {
             var (data, totalRecords, filteredRecords) = await _formRepository.GetAllFormsAsync(request);
 
-            var response = new DataTableResponse<object>
+            var response = new
             {
-                Draw = request.Draw,
-                RecordsTotal = totalRecords,
-                RecordsFiltered = filteredRecords,
-                Data = data.Select(f => new
+                draw = request.Draw,
+                recordsTotal = totalRecords,
+                recordsFiltered = filteredRecords,
+                data = data.Select(f => new
                 {
-                    f.FormId,
-                    f.FormTitle,
-                    CreatedDate = f.CreatedDate.ToString("yyyy-MM-dd HH:mm"),
-                    f.FieldCount,
-                    Actions = $"<a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'>Preview</a>"
-                }).ToList<object>()
+                    formId = f.FormId,
+                    formTitle = f.FormTitle,
+                    createdDate = f.CreatedDate.ToString("yyyy-MM-dd HH:mm"),
+                    fieldCount = f.FieldCount,
+                    actions = $"<a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'>Preview</a>"
+                }).ToList()
             };
 
             return Ok(response);

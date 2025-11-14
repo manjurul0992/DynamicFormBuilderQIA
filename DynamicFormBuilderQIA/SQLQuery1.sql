@@ -70,13 +70,11 @@ BEGIN
     BEGIN TRANSACTION;
     
     BEGIN TRY
-        -- Insert Form
         INSERT INTO Forms (FormTitle, CreatedDate, ModifiedDate)
         VALUES (@FormTitle, GETDATE(), GETDATE());
         
         SET @FormId = SCOPE_IDENTITY();
         
-        -- Insert Form Fields from JSON
         INSERT INTO FormFields (FormId, FieldLabel, FieldLevel, IsRequired, SelectedOption, DisplayOrder)
         SELECT 
             @FormId,
@@ -87,11 +85,11 @@ BEGIN
             DisplayOrder
         FROM OPENJSON(@FormFieldsJson)
         WITH (
-            FieldLabel NVARCHAR(200) '$.fieldLabel',
-            FieldLevel INT '$.fieldLevel',
-            IsRequired BIT '$.isRequired',
-            SelectedOption NVARCHAR(100) '$.selectedOption',
-            DisplayOrder INT '$.displayOrder'
+            FieldLabel NVARCHAR(200) '$.FieldLabel',  -- Changed from fieldLabel
+            FieldLevel INT '$.FieldLevel',             -- Changed from fieldLevel
+            IsRequired BIT '$.IsRequired',             -- Changed from isRequired
+            SelectedOption NVARCHAR(100) '$.SelectedOption', -- Changed from selectedOption
+            DisplayOrder INT '$.DisplayOrder'          -- Changed from displayOrder
         );
         
         COMMIT TRANSACTION;
@@ -102,6 +100,48 @@ BEGIN
     END CATCH
 END
 GO
+--CREATE PROCEDURE sp_SaveForm
+--    @FormTitle NVARCHAR(500),
+--    @FormFieldsJson NVARCHAR(MAX),
+--    @FormId INT OUTPUT
+--AS
+--BEGIN
+--    SET NOCOUNT ON;
+--    BEGIN TRANSACTION;
+    
+--    BEGIN TRY
+--        -- Insert Form
+--        INSERT INTO Forms (FormTitle, CreatedDate, ModifiedDate)
+--        VALUES (@FormTitle, GETDATE(), GETDATE());
+        
+--        SET @FormId = SCOPE_IDENTITY();
+        
+--        -- Insert Form Fields from JSON
+--        INSERT INTO FormFields (FormId, FieldLabel, FieldLevel, IsRequired, SelectedOption, DisplayOrder)
+--        SELECT 
+--            @FormId,
+--            FieldLabel,
+--            FieldLevel,
+--            IsRequired,
+--            SelectedOption,
+--            DisplayOrder
+--        FROM OPENJSON(@FormFieldsJson)
+--        WITH (
+--            FieldLabel NVARCHAR(200) '$.fieldLabel',
+--            FieldLevel INT '$.fieldLevel',
+--            IsRequired BIT '$.isRequired',
+--            SelectedOption NVARCHAR(100) '$.selectedOption',
+--            DisplayOrder INT '$.displayOrder'
+--        );
+        
+--        COMMIT TRANSACTION;
+--    END TRY
+--    BEGIN CATCH
+--        ROLLBACK TRANSACTION;
+--        THROW;
+--    END CATCH
+--END
+--GO
 
 -- SP: Get All Forms with Pagination
 CREATE PROCEDURE sp_GetAllForms
@@ -206,3 +246,6 @@ BEGIN
     DELETE FROM Forms WHERE FormId = @FormId;
 END
 GO
+
+select * from Forms
+select * from FormFields

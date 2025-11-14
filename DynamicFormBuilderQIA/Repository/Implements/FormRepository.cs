@@ -49,14 +49,19 @@ public class FormRepository : IFormRepository
     {
         int formId = 0;
 
-        var fieldsJson = JsonSerializer.Serialize(model.Fields);
+        // Configure JSON serialization to use PascalCase (matching C# property names)
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = null // This keeps PascalCase
+        };
+
+        var fieldsJson = JsonSerializer.Serialize(model.Fields, options);
 
         using (var connection = new SqlConnection(_connectionString))
         {
             using (var command = new SqlCommand("sp_SaveForm", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
-
                 command.Parameters.AddWithValue("@FormTitle", model.FormTitle);
                 command.Parameters.AddWithValue("@FormFieldsJson", fieldsJson);
 

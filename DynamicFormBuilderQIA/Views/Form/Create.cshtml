@@ -11,31 +11,43 @@
             max-width: 900px;
             margin: 30px auto;
         }
+
         .card {
             border: 1px solid #ddd;
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+
         .card-header {
             background-color: #f8f9fa;
             border-bottom: 1px solid #ddd;
             padding: 15px 20px;
             font-weight: 600;
         }
+
         .card-body {
-            padding: 20px;
+            padding: 20px 40px;
         }
+
         .form-group {
-            margin-bottom: 1rem;
+            margin-bottom: 0.7rem;
         }
+
+        #fieldsContainer {
+            max-height: 290px;
+            overflow-y: auto;
+           /*  padding-right: 10px; */
+        }
+
         .field-item {
             background: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 15px 15px 10px 15px;
+            margin-bottom: 0.7rem;
             border-radius: 5px;
             border: 1px solid #dee2e6;
             position: relative;
         }
+
         .remove-field {
             position: absolute;
             top: 10px;
@@ -44,30 +56,64 @@
             cursor: pointer;
             font-size: 20px;
         }
+
+            .remove-field.disabled {
+                color: #ccc;
+                cursor: not-allowed;
+            }
+
         .btn-primary {
             background-color: #5bc0de;
             border-color: #5bc0de;
         }
+
         .btn-success {
             background-color: #5cb85c;
             border-color: #5cb85c;
         }
+
         .btn-secondary {
             background-color: #6c757d;
             border-color: #6c757d;
         }
+
         .error {
             color: #dc3545;
             font-size: 0.875rem;
             margin-top: 0.25rem;
         }
+
         label.error {
             display: block;
         }
+
+        select.form-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .required-asterisk {
+            color: #dc3545;
+            margin-left: 3px;
+        }
+
+        .form-check-input:disabled {
+            cursor: not-allowed;
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
     </style>
 }
 
 <div class="form-builder-container">
+
     <div class="card">
         <div class="card-header">
             <i class="fas fa-tags"></i> Dynamic Form Builder
@@ -75,11 +121,11 @@
         <div class="card-body">
             <form id="formBuilderForm" asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
-
+                @Html.ValidationSummary(true, "", new { @class = "text-danger mb-3" })
                 <div class="form-group">
-                    <label for="formTitle">Form Title</label>
+                    <label for="formTitle" class="fw-bold">Form Title</label>
                     <input type="text"
-                           class="form-control"
+                           class="form-control mt-1"
                            id="formTitle"
                            name="FormTitle"
                            placeholder="Form Title..."
@@ -106,8 +152,22 @@
     </div>
 </div>
 
+<!-- Toast Container -->
+<div class="toast-container">
+    <div id="warningToast" class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <strong>Warning!</strong> Level 1 is required and cannot be modified or removed.
+            </div>
+            <button type="button" style="filter: invert(29%) sepia(100%) saturate(6011%) hue-rotate(353deg) brightness(95%) contrast(102%);" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            @* <button type="button" class="btn-close" style="filter: invert(29%) sepia(100%) saturate(6011%) hue-rotate(353deg) brightness(95%) contrast(102%);" data-bs-dismiss="toast" aria-label="Close"></button> *@
+
+        </div>
+    </div>
+</div>
+
 @section Scripts {
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         let fieldCounter = 0;
         let fieldOptions = @Html.Raw(Json.Serialize(ViewBag.FieldOptions));
@@ -148,42 +208,103 @@
             });
 
             // Clear button click
-            $("#clearBtn").click(function() {
-                if (confirm('Are you sure you want to clear all fields?')) {
+            // $("#clearBtn").click(function() {
+            //     if (confirm('Are you sure you want to clear all fields?')) {
+            //         $("#formTitle").val('');
+            //         $("#fieldsContainer").empty();
+            //         fieldCounter = 0;
+            //         addField(1);
+            //         addField(2);
+            //     }
+            // });
+                    // Clear button click
+        $("#clearBtn").click(function () {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "All fields will be cleared!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, clear all!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    debugger;
                     $("#formTitle").val('');
                     $("#fieldsContainer").empty();
                     fieldCounter = 0;
                     addField(1);
                     addField(2);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Cleared!',
+                        text: 'All fields have been cleared.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
                 }
             });
+        });
+
 
             // Remove field handler (using event delegation)
             $(document).on('click', '.remove-field', function() {
+                // Check if this is Level 1
+                let $fieldItem = $(this).closest('.field-item');
+                let level = parseInt($fieldItem.find('input[name$=".FieldLevel"]').val());
+
+                if (level === 1) {
+                    showToast();
+                    return;
+                }
+
                 if ($('.field-item').length > 1) {
-                    $(this).closest('.field-item').remove();
+                    $fieldItem.remove();
                     updateFieldLevels();
                 } else {
                     alert('At least one field is required');
                 }
             });
+
+            // Handle required checkbox changes
+            $(document).on('change', '.field-required-checkbox', function() {
+                let $fieldItem = $(this).closest('.field-item');
+                let level = parseInt($fieldItem.find('input[name$=".FieldLevel"]').val());
+
+                if (level === 1) {
+                    // Prevent unchecking Level 1
+                    $(this).prop('checked', true);
+                    showToast();
+                } else {
+                    let $hiddenInput = $fieldItem.find('.field-required-input');
+                    $hiddenInput.val($(this).is(':checked'));
+                }
+            });
         });
 
-                function addField(level) {
+        function addField(level) {
             fieldCounter++;
 
             let optionsHtml = '<option value="">Select Item</option>';
             fieldOptions.forEach(function(option) {
-                optionsHtml += `<option value="${option.optionValue}">${option.optionText}</option>`;
+                optionsHtml += `<option value="${option.OptionValue}">${option.OptionText}</option>`;
             });
+
+            // Determine if this is Level 1
+            let isLevel1 = (level === 1);
+            let requiredAsterisk = isLevel1 ? '<span class="required-asterisk">*</span>' : '';
+            let checkedAttr = isLevel1 ? 'checked' : '';
+            let removeFieldClass = isLevel1 ? 'remove-field disabled' : 'remove-field';
 
             let fieldHtml = `
                 <div class="field-item" data-field-id="${fieldCounter}">
-                    <span class="remove-field" title="Remove Field">&times;</span>
+                    <span class="${removeFieldClass}" title="${isLevel1 ? 'Cannot Remove Level 1' : 'Remove Field'}">&times;</span>
 
                     <div class="form-group">
-                        <label>Level ${level}</label>
-                        <select class="form-control field-select"
+                        <label class="fw-bold mb-2">Level ${level}${requiredAsterisk}</label>
+                        <select class="form-select field-select"
                                 name="Fields[${fieldCounter-1}].SelectedOption"
                                 required>
                             ${optionsHtml}
@@ -191,13 +312,14 @@
                         <input type="hidden" name="Fields[${fieldCounter-1}].FieldLabel" value="Level ${level}">
                         <input type="hidden" name="Fields[${fieldCounter-1}].FieldLevel" value="${level}">
                         <input type="hidden" name="Fields[${fieldCounter-1}].DisplayOrder" value="${fieldCounter}">
-                        <input type="hidden" name="Fields[${fieldCounter-1}].IsRequired" value="false" class="field-required-input">
+                        <input type="hidden" name="Fields[${fieldCounter-1}].IsRequired" value="${isLevel1 ? 'true' : 'false'}" class="field-required-input">
                     </div>
 
                     <div class="form-check">
                         <input type="checkbox"
                                class="form-check-input field-required-checkbox"
-                               id="required_${fieldCounter}">
+                               id="required_${fieldCounter}"
+                               ${checkedAttr}>
                         <label class="form-check-label" for="required_${fieldCounter}">
                             Required Field
                         </label>
@@ -207,36 +329,54 @@
 
             $("#fieldsContainer").append(fieldHtml);
 
-            // ✅ Safely re-attach validation to the new field
+            // Safely re-attach validation to the new field
             let validator = $("#formBuilderForm").data("validator");
             if (validator) {
                 $(`select[name="Fields[${fieldCounter-1}].SelectedOption"]`).each(function() {
                     validator.settings.ignore = "";
-                    validator.addElements($(this)); // register new field with validator
+                    validator.addElements($(this));
                     $(this).rules("add", {
                         required: true,
                         messages: { required: "Please select an option" }
                     });
                 });
             }
-
-            // Handle required checkbox change
-            $(`#required_${fieldCounter}`).on('change', function() {
-                let $fieldItem = $(this).closest('.field-item');
-                let $hiddenInput = $fieldItem.find('.field-required-input');
-                $hiddenInput.val($(this).is(':checked'));
-            });
         }
-
 
         function updateFieldLevels() {
             $('.field-item').each(function(index) {
                 let level = index + 1;
-                $(this).find('label').first().text('Level ' + level);
+                let isLevel1 = (level === 1);
+                let requiredAsterisk = isLevel1 ? '<span class="required-asterisk">*</span>' : '';
+
+                $(this).find('label').first().html('Level ' + level + requiredAsterisk);
                 $(this).find('input[name$=".FieldLabel"]').val('Level ' + level);
                 $(this).find('input[name$=".FieldLevel"]').val(level);
                 $(this).find('input[name$=".DisplayOrder"]').val(index + 1);
+
+                // Update remove button
+                let $removeBtn = $(this).find('.remove-field');
+                if (isLevel1) {
+                    $removeBtn.addClass('disabled').attr('title', 'Cannot Remove Level 1');
+                } else {
+                    $removeBtn.removeClass('disabled').attr('title', 'Remove Field');
+                }
+
+                // Update checkbox and hidden input for Level 1
+                if (isLevel1) {
+                    $(this).find('.field-required-checkbox').prop('checked', true);
+                    $(this).find('.field-required-input').val('true');
+                }
             });
+        }
+
+        function showToast() {
+            let toastEl = document.getElementById('warningToast');
+            let toast = new bootstrap.Toast(toastEl, {
+                autohide: true,
+                delay: 5000
+            });
+            toast.show();
         }
     </script>
 }

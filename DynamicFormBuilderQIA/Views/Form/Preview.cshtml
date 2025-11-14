@@ -57,6 +57,12 @@
             border-radius: 4px;
             margin-bottom: 20px;
         }
+
+        select.form-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
     </style>
 }
 
@@ -100,7 +106,7 @@
                                 }
                             }
                         </select> *@
-                        <select class="form-control"
+                        <select class="form-select field-select"
                                 id="field_@field.FieldId"
                                 name="field_@field.FieldId"
                                 @(field.IsRequired ? "required" : "")>

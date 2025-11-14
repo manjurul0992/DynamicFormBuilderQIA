@@ -49,30 +49,87 @@
                 background-color: #0056b3;
                 border-color: #0056b3;
             }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
+        /* Custom Toast Styles */
+        .toast-success {
+            background-color: #d4edda !important;
+            border: 1px solid #c3e6cb !important;
+            color: #155724 !important;
+        }
+
+            .toast-success .toast-body {
+                color: #155724 !important;
+            }
+
+            .toast-success .btn-close {
+                background-color: #ece7e7 !important;
+                background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23dc3545'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat !important;
+                opacity: 1 !important;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+            }
+
+        .toast-error {
+            background-color: #f8d7da !important;
+            border: 1px solid #f5c6cb !important;
+            color: #721c24 !important;
+        }
+
+            .toast-error .toast-body {
+                color: #721c24 !important;
+            }
+
+            .toast-error .btn-close {
+                background-color: #ece7e7 !important;
+                background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23dc3545'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat !important;
+                opacity: 1 !important;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+            }
+
+        .toast {
+            min-width: 300px;
+        }
     </style>
 }
 
-<div class="history-container">
+<!-- Toast Container -->
+<div class="toast-container">
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+        <div id="successToast" class="toast toast-success align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>Success!</strong> @TempData["SuccessMessage"]
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+        <div id="errorToast" class="toast toast-error align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>Error!</strong> @TempData["ErrorMessage"]
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
         </div>
     }
+</div>
 
+<div class="history-container">
     <div class="card">
         <div class="card-header">
             <i class="fas fa-history"></i> History
@@ -107,7 +164,21 @@
 
     <script>
         $(document).ready(function() {
-            debugger;
+            // Show toasts if they exist
+            @if (TempData["SuccessMessage"] != null)
+            {
+                    <text>
+                    showToast('successToast');
+                    </text>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                    <text>
+                    showToast('errorToast');
+                    </text>
+            }
+
             var table = $('#formsTable').DataTable({
                 processing: true,
                 serverSide: true,
@@ -116,10 +187,12 @@
                     type: 'POST',
                     contentType: 'application/json',
                     data: function(d) {
+                        console.log('Request:', d);
                         return JSON.stringify(d);
                     },
                     error: function(xhr, error, thrown) {
-                        console.error('Error loading data:', error);
+                        console.error('Error:', error);
+                        console.error('Response:', xhr.responseText);
                         alert('Error loading forms data. Please try again.');
                     }
                 },
@@ -127,7 +200,15 @@
                     { data: 'formTitle', name: 'FormTitle' },
                     { data: 'createdDate', name: 'CreatedDate' },
                     { data: 'fieldCount', name: 'FieldCount', orderable: false, searchable: false },
-                    { data: 'actions', name: 'Actions', orderable: false, searchable: false }
+                    {
+                        data: 'actions',
+                        name: 'Actions',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return data;
+                        }
+                    }
                 ],
                 order: [[1, 'desc']],
                 pageLength: 10,
@@ -135,9 +216,22 @@
                 language: {
                     processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span>',
                     emptyTable: 'No forms available',
-                    zeroRecords: 'No matching forms found'
+                    zeroRecords: 'No matching forms found',
+                    // search: '_INPUT_',
+                searchPlaceholder: 'Search by Form Title'
                 }
             });
         });
+
+        function showToast(toastId) {
+            let toastEl = document.getElementById(toastId);
+            if (toastEl) {
+                let toast = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: 5000
+                });
+                toast.show();
+            }
+        }
     </script>
 }
