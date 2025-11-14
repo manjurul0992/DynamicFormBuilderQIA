@@ -91,4 +91,9 @@ public class FormController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+    public async Task<IActionResult> GetDropdown(string name)
+    {
+        return ViewComponent("FieldDropdown", new { name });
+    }
+
 }

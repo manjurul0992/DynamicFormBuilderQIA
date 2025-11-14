@@ -135,7 +135,15 @@
                 <div id="fieldsContainer">
                     <!-- Dynamic fields will be added here -->
                 </div>
-
+               @*  @await Component.InvokeAsync("Dropdown", new
+                {
+                    fieldId = "field_1",
+                                fieldName = "Fields[0].SelectedOption",
+                                fieldLabel = "Level 1",
+                                isRequired = true,
+                                options = ViewBag.FieldOptions as List<DynamicFormBuilderQIA.Models.FieldOption>,
+                                selectedValue = null
+                }) *@
                 <div class="mt-3">
                     <button type="button" class="btn btn-primary" id="addMoreBtn">
                         Add More
@@ -291,6 +299,7 @@
             fieldOptions.forEach(function(option) {
                 optionsHtml += `<option value="${option.OptionValue}">${option.OptionText}</option>`;
             });
+
 
             // Determine if this is Level 1
             let isLevel1 = (level === 1);

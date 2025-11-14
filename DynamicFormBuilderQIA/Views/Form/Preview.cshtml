@@ -1,5 +1,4 @@
-﻿@* Views/Form/Preview.cshtml *@
-@model DynamicFormBuilderQIA.Models.Form
+﻿@model DynamicFormBuilderQIA.Models.Form
 
 @{
     ViewData["Title"] = "Preview - " + Model.FormTitle;
@@ -8,49 +7,60 @@
 
 @section Styles {
     <style>
+        /* Your existing styles */
         .preview-container {
             max-width: 900px;
             margin: 30px auto;
         }
+
         .card {
             border: 1px solid #ddd;
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+
         .card-header {
             background-color: #f8f9fa;
             border-bottom: 1px solid #ddd;
             padding: 15px 20px;
             font-weight: 600;
         }
+
         .card-body {
             padding: 20px;
         }
+
         .form-group {
             margin-bottom: 1.5rem;
         }
-        .form-group label {
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
+
+            .form-group label {
+                font-weight: 500;
+                margin-bottom: 0.5rem;
+            }
+
         .required-asterisk {
             color: #dc3545;
             font-weight: bold;
             margin-left: 4px;
         }
-        .form-control {
+
+        .form-control, .form-select {
             border: 1px solid #ced4da;
             border-radius: 4px;
             padding: 0.5rem 0.75rem;
         }
-        .form-control:focus {
-            border-color: #80bdff;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-        }
+
+            .form-control:focus, .form-select:focus {
+                border-color: #80bdff;
+                box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+            }
+
         .btn-secondary {
             background-color: #6c757d;
             border-color: #6c757d;
         }
+
         .form-info {
             background: #e9ecef;
             padding: 10px;
@@ -78,51 +88,17 @@
             </div>
 
             <form id="previewForm">
-                @for (int i = 0; i < Model.FormFields.Count; i++)
+                @foreach (var field in Model.FormFields)
                 {
-                    var field = Model.FormFields[i];
-                    
-                    <div class="form-group">
-                        <label for="field_@field.FieldId">
-                            @field.FieldLabel
-                            @if (field.IsRequired)
-                            {
-                                <span class="required-asterisk">*</span>
-                            }
-                        </label>
-                        @* <select class="form-control" 
-                                id="field_@field.FieldId" 
-                                name="field_@field.FieldId"
-                                @(field.IsRequired ? "required" : "")>
-                            <option value="">Select Item</option>
-                            @if (fieldOptions != null)
-                            {
-                                foreach (var option in fieldOptions)
-                                {
-                                    <option value="@option.OptionValue" 
-                                            @(field.SelectedOption == option.OptionValue ? "selected" : "")>
-                                        @option.OptionText
-                                    </option>
-                                }
-                            }
-                        </select> *@
-                        <select class="form-select field-select"
-                                id="field_@field.FieldId"
-                                name="field_@field.FieldId"
-                                @(field.IsRequired ? "required" : "")>
-                            <option value="">Select Item</option>
-                            @if (fieldOptions != null)
-                            {
-                                foreach (var option in fieldOptions)
-                                {
-                                    var selected = field.SelectedOption == option.OptionValue ? "selected" : "";
-                                    @Html.Raw($"<option value=\"{option.OptionValue}\" {selected}>{option.OptionText}</option>")
-                                }
-                            }
-                        </select>
-
-
-                    </div>
+                    @await Component.InvokeAsync("Dropdown", new
+                    {
+                        fieldId = $"field_{field.FieldId}",
+                                fieldName = $"field_{field.FieldId}",
+                                fieldLabel = field.FieldLabel,
+                                isRequired = field.IsRequired,
+                                options = fieldOptions,
+                                selectedValue = field.SelectedOption
+                    })
                 }
 
                 <div class="mt-4">
@@ -134,12 +110,4 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Optional: Add any preview-specific JavaScript here
-            console.log('Preview form loaded for: @Model.FormTitle');
-        });
-    </script>
 }
