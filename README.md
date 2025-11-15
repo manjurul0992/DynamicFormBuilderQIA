@@ -160,7 +160,7 @@ Before you begin, ensure you have the following installed:
 ## 📸 Application Screenshots
 
 ### 🔹 Code Snippet
-![Code Snippet](./Images_app/CodeSnippet.png)
+![Code Snippet](./Images_app/CodeSnipeet.png)
 
 ### 🔹 Create Page UI
 ![Create Page](./Images_app/CreatePage.png)
