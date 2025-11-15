@@ -158,8 +158,8 @@ public class FormApiController : ControllerBase
 
                 foreach (var option in fieldOptions)
                 {
-                    var selected = option.OptionId.ToString() == field.SelectedOption ? "selected" : "";
-                    htmlContent += $"<option value='{option.OptionId}' {selected}>{option.OptionValue}</option>";
+                    var selected = option.OptionValue == field.SelectedOption ? "selected" : "";
+                    htmlContent += $"<option value='{option.OptionValue}' {selected}>{option.OptionText}</option>";
                 }
 
                 htmlContent += @"
