@@ -1,0 +1,671 @@
+﻿<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet">
+
+<style>
+    .code-accordion .accordion {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .code-accordion .accordion-button:not(.collapsed) {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .code-accordion pre {
+        margin: 0;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .code-accordion code {
+        font-size: 14px;
+    }
+
+    .code-accordion .accordion-body {
+        padding: 0;
+    }
+</style>
+
+<div class="container code-accordion">
+    <h2 class="mb-4 text-center">Code snippets</h2>
+
+    <div class="accordion" id="faqAccordion">
+        <!-- First Accordion Item -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    FormController (Service → business logic → Repository Pattern)
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne"
+                 data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <pre><code class="language-csharp">
+public class FormController : Controller
+{
+    private readonly IFormService _formService;
+
+    public FormController(IFormService formService)
+    {
+        _formService = formService;
+    }
+
+    public async Task&lt;IActionResult&gt; Create()
+    {
+        ViewBag.FieldOptions = await _formService.GetAllFieldOptionsAsync();
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task&lt;IActionResult&gt; Create(CreateFormViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewBag.FieldOptions = await _formService.GetAllFieldOptionsAsync();
+            return View(model);
+        }
+
+        try
+        {
+            var formId = await _formService.CreateFormAsync(model);
+            TempData["SuccessMessage"] = "Form created successfully!";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            ViewBag.FieldOptions = await _formService.GetAllFieldOptionsAsync();
+            return View(model);
+        }
+    }
+
+    public IActionResult Index() =&gt; View();
+
+    public async Task&lt;IActionResult&gt; Preview(int id)
+    {
+        try
+        {
+            var form = await _formService.GetFormByIdAsync(id);
+            ViewBag.FieldOptions = await _formService.GetAllFieldOptionsAsync();
+            return View(form);
+        }
+        catch (KeyNotFoundException)
+        {
+            TempData["ErrorMessage"] = "Form not found.";
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task&lt;IActionResult&gt; Delete(int id)
+    {
+        try
+        {
+            await _formService.DeleteFormAsync(id);
+            TempData["SuccessMessage"] = "Form deleted successfully!";
+        }
+        catch (KeyNotFoundException)
+        {
+            TempData["ErrorMessage"] = "Form not found.";
+        }
+        return RedirectToAction(nameof(Index));
+    }
+}
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Second Accordion Item -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    FormApiController (API with Repository Pattern)
+                </button>
+            </h2>
+            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
+                 data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <pre><code class="language-csharp">
+[Route("api/[controller]")]
+[ApiController]
+public class FormApiController : ControllerBase
+{
+    private readonly IFormRepository _formRepository;
+
+    public FormApiController(IFormRepository formRepository)
+    {
+        _formRepository = formRepository;
+    }
+
+    [HttpGet("GetFieldOptions")]
+    public async Task&lt;IActionResult&gt; GetFieldOptions()
+    {
+        try
+        {
+            var options = await _formRepository.GetAllFieldOptionsAsync();
+            return Ok(options);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new 
+            { 
+                message = "Error retrieving field options", 
+                error = ex.Message 
+            });
+        }
+    }
+
+    [HttpPost("GetFormsDataTable")]
+    public async Task&lt;IActionResult&gt; GetFormsDataTable([FromBody] DataTableRequest request)
+    {
+        try
+        {
+            var (data, totalRecords, filteredRecords) = 
+                await _formRepository.GetAllFormsAsync(request);
+            
+            var response = new
+            {
+                draw = request.Draw,
+                recordsTotal = totalRecords,
+                recordsFiltered = filteredRecords,
+                data = data.Select(f =&gt; new
+                {
+                    formId = f.FormId,
+                    formTitle = f.FormTitle,
+                    createdDate = f.CreatedDate.ToString("yyyy-MM-dd HH:mm"),
+                    fieldCount = f.FieldCount,
+                    actions = $"&lt;a href='/Form/Preview/{f.FormId}' class='btn btn-sm btn-primary'&gt;Preview&lt;/a&gt;"
+                }).ToList()
+            };
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new 
+            { 
+                message = "Error retrieving forms", 
+                error = ex.Message 
+            });
+        }
+    }
+
+    [HttpGet("GetFormById/{id}")]
+    public async Task&lt;IActionResult&gt; GetFormById(int id)
+    {
+        try
+        {
+            var form = await _formRepository.GetFormByIdAsync(id);
+            if (form == null)
+                return NotFound(new { message = "Form not found" });
+            return Ok(form);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new 
+            { 
+                message = "Error retrieving form", 
+                error = ex.Message 
+            });
+        }
+    }
+
+    [HttpDelete("DeleteForm/{id}")]
+    public async Task&lt;IActionResult&gt; DeleteForm(int id)
+    {
+        try
+        {
+            await _formRepository.DeleteFormAsync(id);
+            return Ok(new 
+            { 
+                success = true, 
+                message = "Form deleted successfully" 
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new 
+            { 
+                success = false, 
+                message = "Error deleting form", 
+                error = ex.Message 
+            });
+        }
+    }
+}
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Third Accordion Item -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingThree">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                    FormService &amp; IFormService
+                </button>
+            </h2>
+            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree"
+                 data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <pre><code class="language-csharp">
+public interface IFormService
+{
+    Task&lt;List&lt;FieldOption&gt;&gt; GetAllFieldOptionsAsync();
+    Task&lt;int&gt; CreateFormAsync(CreateFormViewModel model);
+    Task&lt;(List&lt;FormListItemViewModel&gt;, int, int)&gt; GetAllFormsAsync(DataTableRequest request);
+    Task&lt;Form&gt; GetFormByIdAsync(int formId);
+    Task DeleteFormAsync(int formId);
+}
+
+public class FormService : IFormService
+{
+    private readonly IFormRepository _formRepository;
+
+    public FormService(IFormRepository formRepository)
+    {
+        _formRepository = formRepository;
+    }
+
+    public async Task&lt;List&lt;FieldOption&gt;&gt; GetAllFieldOptionsAsync()
+    {
+        return await _formRepository.GetAllFieldOptionsAsync();
+    }
+
+    public async Task&lt;int&gt; CreateFormAsync(CreateFormViewModel model)
+    {
+        ValidateFormModel(model);
+        if (model.Fields != null)
+        {
+            for (int i = 0; i &lt; model.Fields.Count; i++)
+            {
+                if (model.Fields[i].DisplayOrder == 0)
+                    model.Fields[i].DisplayOrder = i + 1;
+            }
+        }
+        return await _formRepository.SaveFormAsync(model);
+    }
+
+    public async Task&lt;Form&gt; GetFormByIdAsync(int formId)
+    {
+        if (formId &lt;= 0)
+            throw new ArgumentException("Form ID must be greater than zero.");
+        
+        var form = await _formRepository.GetFormByIdAsync(formId);
+        if (form == null)
+            throw new KeyNotFoundException($"Form with ID {formId} not found.");
+        
+        if (form.FormFields != null)
+            form.FormFields = form.FormFields.OrderBy(f =&gt; f.DisplayOrder).ToList();
+        
+        return form;
+    }
+
+    public async Task DeleteFormAsync(int formId)
+    {
+        if (formId &lt;= 0)
+            throw new ArgumentException("Form ID must be greater than zero.");
+        
+        var form = await _formRepository.GetFormByIdAsync(formId);
+        if (form == null)
+            throw new KeyNotFoundException($"Form with ID {formId} not found.");
+        
+        await _formRepository.DeleteFormAsync(formId);
+    }
+
+    private void ValidateFormModel(CreateFormViewModel model)
+    {
+        if (string.IsNullOrWhiteSpace(model.FormTitle))
+            throw new ArgumentException("Form title is required.");
+        if (model.Fields == null || !model.Fields.Any())
+            throw new ArgumentException("Form must have at least one field.");
+    }
+}
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fourth Accordion Item -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingFour">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                    FormRepository &amp; IFormRepository
+                </button>
+            </h2>
+            <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour"
+                 data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <pre><code class="language-csharp">
+public interface IFormRepository
+{
+    Task&lt;List&lt;FieldOption&gt;&gt; GetAllFieldOptionsAsync();
+    Task&lt;int&gt; SaveFormAsync(CreateFormViewModel model);
+    Task&lt;(List&lt;FormListItemViewModel&gt;, int, int)&gt; GetAllFormsAsync(DataTableRequest request);
+    Task&lt;Form&gt; GetFormByIdAsync(int formId);
+    Task DeleteFormAsync(int formId);
+}
+
+public class FormRepository : IFormRepository
+{
+    private readonly string _connectionString;
+
+    public FormRepository(IConfiguration configuration)
+    {
+        _connectionString = configuration.GetConnectionString("DefaultConnection");
+    }
+
+    public async Task&lt;List&lt;FieldOption&gt;&gt; GetAllFieldOptionsAsync()
+    {
+        var options = new List&lt;FieldOption&gt;();
+        await GenerateQueryExtension.ExecuteReaderAsync(
+            _connectionString,
+            "sp_GetAllFieldOptions",
+            null,
+            async reader =&gt;
+            {
+                while (await reader.ReadAsync())
+                {
+                    options.Add(new FieldOption
+                    {
+                        OptionId = reader.GetInt32("OptionId"),
+                        OptionText = reader.GetString("OptionText"),
+                        OptionValue = reader.GetString("OptionValue")
+                    });
+                }
+            });
+        return options;
+    }
+
+    public async Task&lt;int&gt; SaveFormAsync(CreateFormViewModel model)
+    {
+        int formId = 0;
+        var fieldsJson = JsonSerializer.Serialize(model.Fields, 
+            new JsonSerializerOptions { PropertyNamingPolicy = null });
+
+        var parameters = new[]
+        {
+            GenerateQueryExtension.CreateParameter("@@FormTitle", model.FormTitle),
+            GenerateQueryExtension.CreateParameter("@@FormFieldsJson", fieldsJson),
+            GenerateQueryExtension.CreateOutputParameter("@@FormId", SqlDbType.Int)
+        };
+
+        await GenerateQueryExtension.ExecuteNonQueryAsync(
+            _connectionString, "sp_SaveForm", parameters);
+
+        formId = (int)parameters[2].Value;
+        return formId;
+    }
+
+    public async Task&lt;Form&gt; GetFormByIdAsync(int formId)
+    {
+        Form form = null;
+        var parameters = new[]
+        {
+            GenerateQueryExtension.CreateParameter("@@FormId", formId)
+        };
+
+        await GenerateQueryExtension.ExecuteReaderAsync(
+            _connectionString,
+            "sp_GetFormById",
+            parameters,
+            async reader =&gt;
+            {
+                if (await reader.ReadAsync())
+                {
+                    form = new Form
+                    {
+                        FormId = reader.GetInt32("FormId"),
+                        FormTitle = reader.GetString("FormTitle"),
+                        CreatedDate = reader.GetDateTime("CreatedDate"),
+                        ModifiedDate = reader.GetDateTime("ModifiedDate"),
+                        FormFields = new List&lt;FormField&gt;()
+                    };
+                }
+
+                if (await reader.NextResultAsync() &amp;&amp; form != null)
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        form.FormFields.Add(new FormField
+                        {
+                            FieldId = reader.GetInt32("FieldId"),
+                            FormId = reader.GetInt32("FormId"),
+                            FieldLabel = reader.GetString("FieldLabel"),
+                            FieldLevel = reader.GetInt32("FieldLevel"),
+                            IsRequired = reader.GetBoolean("IsRequired"),
+                            SelectedOption = reader.IsDBNull("SelectedOption") ? null : reader.GetString("SelectedOption"),
+                            DisplayOrder = reader.GetInt32("DisplayOrder")
+                        });
+                    }
+                }
+            });
+
+        return form;
+    }
+
+    public async Task DeleteFormAsync(int formId)
+    {
+        var parameters = new[]
+        {
+            GenerateQueryExtension.CreateParameter("@@FormId", formId)
+        };
+        await GenerateQueryExtension.ExecuteNonQueryAsync(
+            _connectionString, "sp_DeleteForm", parameters);
+    }
+}
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fifth Accordion Item -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingFive">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                    DropdownViewComponent &amp; Default.cshtml
+                </button>
+            </h2>
+            <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive"
+                 data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <pre><code class="language-csharp">
+public class DropdownViewComponent : ViewComponent
+{
+    public IViewComponentResult Invoke(
+        string fieldId,
+        string fieldName,
+        string fieldLabel,
+        bool isRequired,
+        List&lt;FieldOption&gt; options,
+        string selectedValue = null)
+    {
+        var model = new DropdownViewModel
+        {
+            FieldId = fieldId,
+            FieldName = fieldName,
+            FieldLabel = fieldLabel,
+            IsRequired = isRequired,
+            Options = options ?? new List&lt;FieldOption&gt;(),
+            SelectedValue = selectedValue
+        };
+        return View(model);
+    }
+}
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sixth Accordion Item -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingSix">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">
+                    Dependency Registration
+                </button>
+            </h2>
+            <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix"
+                 data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <pre><code class="language-csharp">
+// Program.cs - Add these registrations:
+builder.Services.AddScoped&lt;IFormRepository, FormRepository&gt;();
+builder.Services.AddScoped&lt;IFormService, FormService&gt;();
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seventh Accordion Item -->     
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingSeven">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseSeven" aria-expanded="false" aria-controls="collapseSeven">
+                    Database Script with Stored Procedures
+                </button>
+            </h2>
+            <div id="collapseSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven"
+                 data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <pre><code class="language-sql">
+CREATE DATABASE DynamicFormBuilderDB;
+GO
+
+USE DynamicFormBuilderDB;
+GO
+
+CREATE TABLE Forms (
+    FormId INT PRIMARY KEY IDENTITY(1,1),
+    FormTitle NVARCHAR(500) NOT NULL,
+    CreatedDate DATETIME DEFAULT GETDATE(),
+    ModifiedDate DATETIME DEFAULT GETDATE()
+);
+GO
+
+CREATE TABLE FormFields (
+    FieldId INT PRIMARY KEY IDENTITY(1,1),
+    FormId INT NOT NULL,
+    FieldLabel NVARCHAR(200) NOT NULL,
+    FieldLevel INT NOT NULL,
+    IsRequired BIT DEFAULT 0,
+    SelectedOption NVARCHAR(100),
+    DisplayOrder INT DEFAULT 0,
+    FOREIGN KEY (FormId) REFERENCES Forms(FormId) ON DELETE CASCADE
+);
+GO
+
+CREATE TABLE FieldOptions (
+    OptionId INT PRIMARY KEY IDENTITY(1,1),
+    OptionText NVARCHAR(100) NOT NULL,
+    OptionValue NVARCHAR(100) NOT NULL
+);
+GO
+
+INSERT INTO FieldOptions (OptionText, OptionValue) VALUES
+('Option 1', 'option1'),
+('Option 2', 'option2'),
+('Option 3', 'option3'),
+('Option 4', 'option4'),
+('Option 5', 'option5');
+GO
+
+CREATE PROCEDURE sp_GetAllFieldOptions
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT OptionId, OptionText, OptionValue FROM FieldOptions ORDER BY OptionId;
+END
+GO
+
+CREATE PROCEDURE sp_SaveForm
+    @@FormTitle NVARCHAR(500),
+    @@FormFieldsJson NVARCHAR(MAX),
+    @@FormId INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        INSERT INTO Forms (FormTitle, CreatedDate, ModifiedDate)
+        VALUES (@@FormTitle, GETDATE(), GETDATE());
+        SET @@FormId = SCOPE_IDENTITY();
+        INSERT INTO FormFields (FormId, FieldLabel, FieldLevel, IsRequired, SelectedOption, DisplayOrder)
+        SELECT @@FormId, FieldLabel, FieldLevel, IsRequired, SelectedOption, DisplayOrder
+        FROM OPENJSON(@@FormFieldsJson)
+        WITH (
+            FieldLabel NVARCHAR(200) '$.FieldLabel',
+            FieldLevel INT '$.FieldLevel',
+            IsRequired BIT '$.IsRequired',
+            SelectedOption NVARCHAR(100) '$.SelectedOption',
+            DisplayOrder INT '$.DisplayOrder'
+        );
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE PROCEDURE sp_GetAllForms
+    @@PageNumber INT = 1,
+    @@PageSize INT = 10,
+    @@SearchValue NVARCHAR(500) = '',
+    @@SortColumn NVARCHAR(50) = 'FormId',
+    @@SortDirection NVARCHAR(4) = 'DESC',
+    @@TotalRecords INT OUTPUT,
+    @@FilteredRecords INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT @@TotalRecords = COUNT(*) FROM Forms;
+    SELECT @@FilteredRecords = COUNT(*) FROM Forms 
+    WHERE FormTitle LIKE '%' + @@SearchValue + '%';
+    SELECT FormId, FormTitle, CreatedDate, ModifiedDate,
+           (SELECT COUNT(*) FROM FormFields WHERE FormId = f.FormId) AS FieldCount
+    FROM Forms f
+    WHERE FormTitle LIKE '%' + @@SearchValue + '%'
+    ORDER BY FormId DESC
+    OFFSET (@@PageNumber - 1) * @@PageSize ROWS FETCH NEXT @@PageSize ROWS ONLY;
+END
+GO
+
+CREATE PROCEDURE sp_GetFormById
+    @@FormId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT FormId, FormTitle, CreatedDate, ModifiedDate
+    FROM Forms WHERE FormId = @@FormId;
+    SELECT FieldId, FormId, FieldLabel, FieldLevel, IsRequired, SelectedOption, DisplayOrder
+    FROM FormFields WHERE FormId = @@FormId ORDER BY DisplayOrder;
+END
+GO
+
+CREATE PROCEDURE sp_DeleteForm
+    @@FormId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM Forms WHERE FormId = @@FormId;
+END
+GO
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
